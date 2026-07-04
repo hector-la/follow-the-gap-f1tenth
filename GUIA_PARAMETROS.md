@@ -1,14 +1,12 @@
-# Guía de estudio — Follow the Gap (FTG)
+# Guía de parámetros — Follow the Gap (`gap_node.py`)
 
-Apuntes de los algoritmos de navegación reactiva implementados en `src/controllers/controllers/`.
+Apuntes de tuning del controlador reactivo **Follow the Gap** implementado en `gap_node.py`.
 
 | Nodo | Archivo | Comando |
 |------|---------|---------|
-| FTG básico | `gap_node.py` | `ros2 run controllers gap_node` |
-| FTG + Disparity Extender | `gap_disparity_node.py` | `ros2 run controllers gap_disparity_node` |
-| Nodo de pruebas (TTC) | `taller_node.py` | `ros2 run controllers taller_node` |
+| Follow the Gap | `gap_node.py` | `ros2 run controllers gap_node` |
 
-> Recuerda: tras editar cualquier archivo → `colcon build && source install/setup.bash`
+> Recuerda: tras editar el archivo → `colcon build && source install/setup.bash`
 
 ---
 
@@ -27,25 +25,7 @@ Convención de manejo: `steering_angle` positivo = izquierda, negativo = derecha
 
 ---
 
-## 2. TTC — Frenado de emergencia (`taller_node.py`)
-
-**Idea:** para cada rayo, ¿cuánto tiempo falta para chocar si seguimos a esta velocidad?
-
-```
-TTC = distancia / (velocidad_actual * cos(angulo))
-```
-
-Solo la componente de la velocidad que apunta al obstáculo (`cos θ`) nos acerca a él.
-
-**Puntos clave:**
-- TTC **solo frena, no esquiva.** Es una capa de seguridad, no de navegación.
-- Es un **latch**: una vez que frena, se queda frenado (en el sim hay inercia, no para al instante).
-- Hay que filtrar `inf` y `NaN` antes de dividir.
-- Un rayo lateral casi nunca frena el carro porque `cos(90°)=0`.
-
----
-
-## 3. Follow the Gap básico (`gap_node.py`)
+## 2. Cómo funciona Follow the Gap
 
 **Idea:** encontrar el espacio libre más grande al frente y dirigirse a su centro.
 
@@ -64,28 +44,7 @@ Solo la componente de la velocidad que apunta al obstáculo (`cos θ`) nos acerc
 
 ---
 
-## 4. Disparity Extender (`gap_disparity_node.py`)
-
-**Idea:** rellenar las esquinas. En un salto brusco entre rayos vecinos (disparidad), el LIDAR mide hasta la pared del fondo, pero el borde físico está mucho más cerca. Se toma el valor **más cercano** y se extiende sobre los rayos vecinos.
-
-```
-ANTES:    [... 2.0  2.1  2.0  8.5  9.0  8.8 ...]   ← disparidad
-DESPUÉS:  [... 2.0  2.1  2.0  2.0  2.0  8.8 ...]   ← extendido
-```
-
-Nº de rayos a extender (geometría del ancho del carro):
-```
-angulo = atan(ancho_carro / distancia)   →   más cerca = más rayos
-```
-
-**Puntos clave:**
-- Evita que el carro apunte a "gaps fantasma" detrás de las esquinas.
-- Toma las curvas más limpio → permite subir `vel_curva` sin salirse.
-- Es un paso **adicional** al básico: conserva burbuja, gap, anti-oscilación, etc.
-
----
-
-## 5. Tabla de parámetros — Navegación (ambos nodos)
+## 3. Tabla de parámetros — Navegación
 
 | Parámetro | Valor | Si lo SUBES | Si lo BAJAS |
 |-----------|-------|-------------|-------------|
@@ -95,7 +54,7 @@ angulo = atan(ancho_carro / distancia)   →   más cerca = más rayos
 | `umbral_gap` | 1.0 m | Más exigente, gaps cortos/conservadores | Más permisivo, entra a espacios estrechos |
 | `fov_recorte` | 100° | Ve más a los lados (curvas cerradas); puede desviarse | Más enfocado al frente, estable; tarda en ver salida de curva |
 
-## 6. Tabla de parámetros — Velocidad y suavizado
+## 4. Tabla de parámetros — Velocidad y suavizado
 
 | Parámetro | Valor | Si lo SUBES | Si lo BAJAS |
 |-----------|-------|-------------|-------------|
@@ -107,14 +66,7 @@ angulo = atan(ancho_carro / distancia)   →   más cerca = más rayos
 > **La velocidad proporcional NO se ajusta directo.** Se recalcula sola entre `vel_recta` y `vel_curva` según el ángulo de giro:
 > `speed = vel_recta − (vel_recta − vel_curva) · (|steering| / 0.4)`
 
-## 7. Tabla de parámetros — Disparity Extender (solo `gap_disparity_node.py`)
-
-| Parámetro | Valor | Si lo SUBES | Si lo BAJAS |
-|-----------|-------|-------------|-------------|
-| `umbral_disparidad` | 0.4 m | Detecta menos disparidades (solo saltos grandes) | Más sensible, rellena más esquinas (puede sobre-rellenar) |
-| `ancho_carro` | 0.30 m | Rellena más ancho, más margen, curvas abiertas | Rellena menos, pasa más cerca de esquinas |
-
-## 8. Tabla de parámetros — Contador de vueltas (ambos nodos)
+## 5. Tabla de parámetros — Contador de vueltas
 
 | Parámetro | Valor | Efecto |
 |-----------|-------|--------|
@@ -123,7 +75,7 @@ angulo = atan(ancho_carro / distancia)   →   más cerca = más rayos
 
 ---
 
-## 9. Relaciones entre parámetros (se compensan entre sí)
+## 6. Relaciones entre parámetros (se compensan entre sí)
 
 | Relación | Cómo se compensan |
 |----------|-------------------|
@@ -135,7 +87,7 @@ angulo = atan(ancho_carro / distancia)   →   más cerca = más rayos
 
 ---
 
-## 10. Método de tuning recomendado
+## 7. Método de tuning recomendado
 
 1. Cambia **un parámetro a la vez.**
 2. Mide el **tiempo por vuelta** (lo imprime el nodo en la terminal) — métrica objetiva, no "se siente mejor".
