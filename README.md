@@ -30,6 +30,8 @@ La idea central:
 
 > En cada lectura del LIDAR, encuentra el **hueco (gap)** de espacio libre más grande frente al carro y apunta hacia su **centro**, evitando el obstáculo más cercano.
 
+**Una analogía:** imagina que caminas por un pasillo con los ojos vendados, pero puedes estirar los brazos y sentir a qué distancia está la pared en muchas direcciones. En cada paso te giras hacia donde sientas **más espacio abierto** y caminas más rápido si el camino está despejado, más lento si hay una curva cerca. Eso es exactamente lo que hace este algoritmo, 50 veces por segundo.
+
 ### Geometría del sensor
 
 El LIDAR del F1TENTH entrega **1080 rayos** cubriendo un FOV de **270°**:
@@ -237,6 +239,18 @@ El carro empezará a dar vueltas solo. En la terminal del controlador verás el 
 ```
 
 > **Recuerda:** cada vez que edites `gap_node.py`, vuelve a ejecutar `colcon build && source install/setup.bash`.
+
+### Solución de problemas
+
+| Síntoma | Causa probable | Solución |
+|---------|----------------|----------|
+| El carro no se mueve | No sourceaste la terminal, o el nodo no publica en `/drive` | `source install/setup.bash` en **cada** terminal; verifica con `ros2 topic echo /drive` |
+| `Package 'controllers' not found` | Olvidaste compilar o registrar el nodo | `colcon build` y revisa el `entry_point` en `setup.py` |
+| El carro choca en las curvas | Va muy rápido para lo que reacciona | Baja `vel_curva`, o sube `radio_burbuja` y `alpha_suavizado` |
+| El carro serpentea en las rectas | Reacciona a giros minúsculos por ruido | Sube `zona_muerta` y/o baja `alpha_suavizado` |
+| Los cambios no tienen efecto | Corriste el nodo sin recompilar | `colcon build && source install/setup.bash` antes de `ros2 run` |
+
+> Los detalles de cada parámetro están en la [guía de tuning](guia_parametros.md).
 
 ---
 

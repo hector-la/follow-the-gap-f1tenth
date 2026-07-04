@@ -8,6 +8,8 @@ Apuntes de tuning del controlador reactivo **Follow the Gap** implementado en `g
 
 > Recuerda: tras editar el archivo → `colcon build && source install/setup.bash`
 
+**Cómo usar esta guía:** los parámetros viven al inicio de `gap_node.py` (en `__init__`). Cambia **uno a la vez**, recompila, corre el nodo y observa el tiempo por vuelta. Las tablas de abajo te dicen qué esperar al subir o bajar cada valor. Si buscas la explicación conceptual del algoritmo, mírala primero en el [README](README.md).
+
 ---
 
 ## 1. Geometría del LIDAR (base de todo)
@@ -76,6 +78,8 @@ Convención de manejo: `steering_angle` positivo = izquierda, negativo = derecha
 ---
 
 ## 6. Relaciones entre parámetros (se compensan entre sí)
+
+> Leyenda: `A ↑ → B ↓` significa "si subes A, normalmente conviene bajar B para mantener el equilibrio". `↔` = definen juntos un rango.
 
 | Relación | Cómo se compensan |
 |----------|-------------------|
