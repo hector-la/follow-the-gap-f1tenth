@@ -4,7 +4,7 @@ Tutorial e implementación de un controlador de navegación reactiva **Follow th
 
 El vehículo recorre el circuito de forma autónoma usando **únicamente** los datos del LIDAR — sin mapa, sin planificación global y sin memoria entre lecturas. En cada barrido del sensor busca el espacio libre más grande frente a él y dirige el carro hacia su centro.
 
-> **Autor:** Héctor La (`hector-la`) · ESPOL
+> **Autor:** Héctor La Mota · ESPOL
 > **Nodo principal:** [`src/gap_node.py`](src/gap_node.py)
 
 ---
@@ -261,6 +261,3 @@ Más allá del FTG básico, este nodo incluye:
 
 ---
 
-## Licencia
-
-MIT — uso educativo. Proyecto académico ESPOL.
