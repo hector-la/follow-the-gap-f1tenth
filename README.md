@@ -7,6 +7,15 @@ El vehículo recorre el circuito de forma autónoma usando **únicamente** los d
 > **Autor:** Héctor La Mota · ESPOL
 > **Nodo principal:** [`src/gap_node.py`](src/gap_node.py)
 
+## 🎥 Demostración
+
+El carro completando vueltas de forma autónoma con este controlador:
+
+▶️ **[Ver video de la demostración](videos/FTG.webm)** (`videos/FTG.webm`)
+
+<!-- GitHub reproduce el .webm al abrir el enlace. Para incrustarlo con reproductor
+     dentro del README, arrastra el archivo a la edición del README en la web de GitHub. -->
+
 ---
 
 ## Tabla de contenidos
