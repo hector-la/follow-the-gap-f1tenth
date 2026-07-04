@@ -18,7 +18,7 @@ El vehículo recorre el circuito de forma autónoma usando **únicamente** los d
 5. [Requisitos](#5-requisitos)
 6. [Instrucciones de ejecución](#6-instrucciones-de-ejecución)
 7. [Mejoras adicionales implementadas](#7-mejoras-adicionales-implementadas)
-8. [Posibles extensiones](#8-posibles-extensiones)
+8. [Mejora propuesta: Disparity Extender](#8-mejora-propuesta-disparity-extender)
 
 ---
 
@@ -167,7 +167,7 @@ Todos se definen en `__init__`. Los valores mostrados son los usados en esta imp
 > **La velocidad proporcional no se ajusta directamente.** Se recalcula sola entre `vel_recta` y `vel_curva` según el giro:
 > `speed = vel_recta − (vel_recta − vel_curva) · (|steering| / 0.4)`
 
-Para la guía completa de tuning, ver [`GUIA_PARAMETROS.md`](GUIA_PARAMETROS.md).
+Para la guía completa de tuning, ver [`guia_parametros.md`](guia_parametros.md).
 
 ---
 
@@ -253,11 +253,29 @@ Más allá del FTG básico, este nodo incluye:
 
 ---
 
-## 8. Posibles extensiones
+## 8. Mejora propuesta: Disparity Extender
 
-- **Disparity Extender:** detectar saltos bruscos entre rayos vecinos (esquinas) y "rellenar" el borde cercano, para que el carro no apunte a huecos fantasma detrás de las esquinas. Permite subir la velocidad en curva.
-- **Punto objetivo más lejano** en lugar del centro, ponderado por seguridad.
-- **Velocidad en función de la distancia frontal**, no solo del giro.
+Una mejora natural sobre este FTG básico es el **Disparity Extender**.
+
+En un salto brusco de distancia entre dos rayos vecinos (una **disparidad**, típica de esquinas), el LIDAR mide hasta la pared del fondo, pero el borde físico del obstáculo está mucho más cerca. Sin corregir esto, el carro apunta a "huecos fantasma" detrás de las esquinas y puede rozar el borde.
+
+La mejora toma el valor **más cercano** de la disparidad y lo **extiende** sobre los rayos vecinos:
+
+```
+ANTES:    [... 2.0  2.1  2.0  8.5  9.0  8.8 ...]   ← disparidad (salto brusco)
+DESPUÉS:  [... 2.0  2.1  2.0  2.0  2.0  8.8 ...]   ← borde cercano extendido
+```
+
+El número de rayos a extender depende del ancho del carro y la distancia:
+
+```
+angulo = atan(ancho_carro / distancia)   →   más cerca = más rayos
+```
+
+**Beneficios:**
+- Evita apuntar a gaps fantasma detrás de las esquinas.
+- Toma las curvas más limpio → permite subir `vel_curva` sin salirse.
+- Es un paso **adicional** al FTG básico: conserva burbuja, gap, anti-oscilación, etc.
 
 ---
 
