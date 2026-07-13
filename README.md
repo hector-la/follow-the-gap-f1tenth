@@ -15,9 +15,9 @@ Tutorial e implementación de dos controladores de navegación reactiva **Follow
 
 ▶️ **[Ver video de la demostración](videos/FTG.webm)** (`videos/FTG.webm`)
 
-### Parte 2 — FTG con Obstáculos Estáticos y Dinámicos
+### Parte 2 — FTG con Obstáculos Estáticos y Dinámicos 
 
-▶️ **[Ver video de la demostración](https://www.youtube.com/watch?v=AATlFTNXq6s)** 
+▶️ **[Ver video de la demostración](https://www.youtube.com/watch?v=AATlFTNXq6s)** Velocidad x1
 
 <!-- GitHub reproduce el .webm al abrir el enlace. Para incrustarlo con reproductor
      dentro del README, arrastra el archivo a la edición del README en la web de GitHub. -->
