@@ -292,9 +292,9 @@ num_agent: 2
 sx: 0.0
 sy: 0.0
 stheta: -1.35
-sx1: 3.5
-sy1: -11.0
-stheta1: -1.40
+sx1: 36.0
+sy1: -16.0
+stheta1: 1.40
 ```
 
 `colcon build` de nuevo, y lanza (**3 terminales** — el simulador necesita mensajes simultáneos en `/drive` y `/opp_drive`; si solo publicas en uno, **ninguno** de los dos vehículos se mueve):
