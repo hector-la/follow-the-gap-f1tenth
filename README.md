@@ -17,7 +17,7 @@ Tutorial e implementación de dos controladores de navegación reactiva **Follow
 
 ### Parte 2 — FTG con Obstáculos Estáticos y Dinámicos
 
-▶️ **[Ver video de la demostración](PEGA_AQUI_EL_LINK_DE_YOUTUBE)** (acelerado 3x–4x; duración real ≈ 12 min)
+▶️ **[Ver video de la demostración](https://www.youtube.com/watch?v=AATlFTNXq6s)** (acelerado 3x–4x; duración real ≈ 12 min)
 
 <!-- GitHub reproduce el .webm al abrir el enlace. Para incrustarlo con reproductor
      dentro del README, arrastra el archivo a la edición del README en la web de GitHub. -->
