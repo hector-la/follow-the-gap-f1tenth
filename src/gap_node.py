@@ -34,22 +34,24 @@ class ReactiveFollowGap(Node):
         self.create_subscription(Odometry, '/ego_racecar/odom', self.odom_callback, 10)
 
         # --- PARÁMETROS AJUSTABLES ---
-        self.rango_max = 3.0          # m — distancias mayores se recortan a este valor
-        self.radio_burbuja = 80      # nº de rayos a poner en cero alrededor del más cercano
-        self.ventana_suavizado = 5    # nº de rayos a promediar para reducir ruido
-        self.umbral_gap = 1.0         # m — un rayo cuenta como "libre" si supera esta distancia
+        # Config alineada con gap_rebase_node.py (Parte 2): mismo algoritmo,
+        # pero con más horizonte de visión y reacción más fina.
+        self.rango_max = 6.8          # m — distancias mayores se recortan a este valor
+        self.radio_burbuja = 52      # nº de rayos a poner en cero alrededor del más cercano
+        self.ventana_suavizado = 3    # nº de rayos a promediar para reducir ruido
+        self.umbral_gap = 1.7         # m — un rayo cuenta como "libre" si supera esta distancia
 
-        # Recorte del campo de visión: solo usamos el sector frontal (~±70°).
+        # Recorte del campo de visión: solo usamos el sector frontal.
         # Los rayos que apuntan hacia atrás no sirven para conducir hacia adelante.
-        self.fov_recorte = math.radians(100)   # medio-ángulo del sector frontal que conservamos
+        self.fov_recorte = math.radians(85)   # medio-ángulo del sector frontal que conservamos
 
         # Velocidades
-        self.vel_recta = 7.5         # m/s cuando el camino está recto
-        self.vel_curva = 2.15        # m/s cuando el robot está girando fuerte
+        self.vel_recta = 7.0         # m/s cuando el camino está recto
+        self.vel_curva = 1.30        # m/s cuando el robot está girando fuerte
 
         # Anti-oscilación
-        self.zona_muerta = math.radians(20)   # ángulos menores a esto se fuerzan a 0 (recta)
-        self.alpha_suavizado = 0.4             # peso del ángulo nuevo (0=todo viejo, 1=todo nuevo)
+        self.zona_muerta = math.radians(1.5)  # ángulos menores a esto se fuerzan a 0 (recta)
+        self.alpha_suavizado = 0.50            # peso del ángulo nuevo (0=todo viejo, 1=todo nuevo)
         self.steering_previo = 0.0           # último ángulo publicado (para el filtro)
 
         # Índices del sector frontal — se calculan en el primer scan
@@ -228,15 +230,15 @@ class ReactiveFollowGap(Node):
                           (1 - self.alpha_suavizado) * self.steering_previo)
         self.steering_previo = steering_angle
 
-        # Limitar el ángulo al máximo físico del carro (±0.4 rad aprox.)
-        steering_angle = max(-0.4, min(0.4, steering_angle))
+        # Limitar el ángulo al máximo físico del carro (±0.41 rad aprox.)
+        steering_angle = max(-0.41, min(0.41, steering_angle))
 
         # 6) VELOCIDAD PROPORCIONAL: interpolación lineal entre vel_recta y vel_curva
         #    según cuánto gira el carro. Sin escalón brusco:
         #      steering = 0     → vel_recta
-        #      steering = ±0.4  → vel_curva
+        #      steering = ±0.41 → vel_curva
         #    Esto suaviza la entrada/salida de curvas en vez de frenar de golpe.
-        factor_giro = abs(steering_angle) / 0.4          # 0 en recta, 1 en giro máximo
+        factor_giro = abs(steering_angle) / 0.41         # 0 en recta, 1 en giro máximo
         speed = self.vel_recta - (self.vel_recta - self.vel_curva) * factor_giro
 
         # Publicar comando

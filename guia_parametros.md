@@ -47,25 +47,27 @@ Convención de manejo: `steering_angle` positivo = izquierda, negativo = derecha
 
 ### 3. Tabla de parámetros — Navegación
 
+> Estos valores son los mismos que usa `gap_rebase_node.py` (Parte 2) — se adoptaron aquí porque, en la práctica, dieron mejor control incluso sin obstáculos.
+
 | Parámetro | Valor | Si lo SUBES | Si lo BAJAS |
 |-----------|-------|-------------|-------------|
-| `rango_max` | 3.0 m | Ve gaps más lejanos, anticipa más | Más "miope", solo reacciona a lo cercano |
-| `radio_burbuja` | 80 | Se aleja de paredes, curvas abiertas; puede tapar gaps válidos | Pasa más cerca, aprovecha huecos chicos; riesgo de raspar |
-| `ventana_suavizado` | 5 | Scan más limpio, borra detalles finos | Más sensible al ruido |
-| `umbral_gap` | 1.0 m | Más exigente, gaps cortos/conservadores | Más permisivo, entra a espacios estrechos |
-| `fov_recorte` | 100° | Ve más a los lados (curvas cerradas); puede desviarse | Más enfocado al frente, estable; tarda en ver salida de curva |
+| `rango_max` | 6.8 m | Ve gaps más lejanos, anticipa más | Más "miope", solo reacciona a lo cercano |
+| `radio_burbuja` | 52 | Se aleja de paredes, curvas abiertas; puede tapar gaps válidos | Pasa más cerca, aprovecha huecos chicos; riesgo de raspar |
+| `ventana_suavizado` | 3 | Scan más limpio, borra detalles finos | Más sensible al ruido |
+| `umbral_gap` | 1.7 m | Más exigente, gaps cortos/conservadores | Más permisivo, entra a espacios estrechos |
+| `fov_recorte` | 85° | Ve más a los lados (curvas cerradas); puede desviarse | Más enfocado al frente, estable; tarda en ver salida de curva |
 
 ### 4. Tabla de parámetros — Velocidad y suavizado
 
 | Parámetro | Valor | Si lo SUBES | Si lo BAJAS |
 |-----------|-------|-------------|-------------|
-| `vel_recta` | 7.5 m/s | Más rápido en recta; menos reacción | Más seguro, vueltas lentas |
-| `vel_curva` | 2.15 m/s | Curvas más rápidas; riesgo de salirse | Curvas seguras pero lentas |
-| `zona_muerta` | 20° | Rectas firmes; ignora giros pequeños (peligroso si muy alto) | Reacciona a giros mínimos; más serpenteo |
-| `alpha_suavizado` | 0.4 | Reacciona rápido pero brusco/oscilante | Más suave y estable; reacciona tarde en curvas |
+| `vel_recta` | 7.0 m/s | Más rápido en recta; menos reacción | Más seguro, vueltas lentas |
+| `vel_curva` | 1.30 m/s | Curvas más rápidas; riesgo de salirse | Curvas seguras pero lentas |
+| `zona_muerta` | 1.5° | Rectas firmes; ignora giros pequeños (peligroso si muy alto) | Reacciona a giros mínimos; más serpenteo |
+| `alpha_suavizado` | 0.50 | Reacciona rápido pero brusco/oscilante | Más suave y estable; reacciona tarde en curvas |
 
 > **La velocidad proporcional NO se ajusta directo.** Se recalcula sola entre `vel_recta` y `vel_curva` según el ángulo de giro:
-> `speed = vel_recta − (vel_recta − vel_curva) · (|steering| / 0.4)`
+> `speed = vel_recta − (vel_recta − vel_curva) · (|steering| / 0.41)`
 
 ### 5. Tabla de parámetros — Contador de vueltas
 
@@ -91,7 +93,7 @@ Convención de manejo: `steering_angle` positivo = izquierda, negativo = derecha
 1. Cambia **un parámetro a la vez.**
 2. Mide el **tiempo por vuelta** (lo imprime el nodo en la terminal) — métrica objetiva, no "se siente mejor".
 3. Los 3 de mayor impacto en el tiempo: **`vel_curva`**, **`alpha_suavizado`**, **`radio_burbuja`**.
-4. Para `vel_curva`: sube de a poco (2.15 → 2.5 → 3.0) hasta que se salga, luego retrocede un paso.
+4. Para `vel_curva`: sube de a poco (1.30 → 1.8 → 2.3) hasta que se salga, luego retrocede un paso.
 
 ---
 
@@ -123,14 +125,14 @@ Mismo algoritmo y misma geometría de LIDAR que la Parte 1 (secciones 1 y 2 arri
 > ros2 run controllers gap_rebase_node --ros-args -p vel_recta:=2.0 -p vel_curva:=1.0
 > ```
 
-### 8.3 Por qué estos valores son distintos a la Parte 1
+### 8.3 Qué queda distinto de la Parte 1
+
+La navegación (`rango_max`, `radio_burbuja`, `umbral_gap`, `fov_recorte`, `zona_muerta`, `alpha_suavizado`) es **idéntica** a la Parte 1 — ese tuning resultó ser mejor en general, no solo para esquivar obstáculos, así que se igualó en ambos nodos. Lo único que sigue siendo propio de esta parte:
 
 | Diferencia | Motivo |
 |------------|--------|
-| `rango_max` mucho mayor (6.8 vs 3.0) | Con obstáculos y un rival dinámico, ver lejos da tiempo de elegir el hueco correcto antes de estar encima |
-| `zona_muerta` mucho menor (1.5° vs 20°) | Esquivar obstáculos puntuales requiere correcciones finas que la zona muerta grande de la Parte 1 ignoraría |
-| `umbral_gap` mayor (1.7 vs 1.0) | Con el mapa más "sucio" (obstáculos + rival), conviene ser más estricto sobre qué cuenta como hueco seguro |
-| Sin freno por distancia/TTC | Es la razón estructural por la que **sí rebasa**: nada retiene al carro cerca del rival, así que la dirección (que ya apunta al hueco lateral) puede ejecutarse a velocidad plena |
+| `vel_recta`/`vel_curva` como parámetros ROS (no fijos en el código) | Permite lanzar el mismo nodo dos veces con velocidades distintas — ego rápido, oponente lento — sin duplicar archivos |
+| Sin freno por distancia/TTC | Es la razón estructural por la que **sí rebasa** (compartida con la Parte 1): nada retiene al carro cerca de un obstáculo o del rival, así que la dirección (que ya apunta al hueco lateral) puede ejecutarse a velocidad plena |
 
 ### 8.4 Método de tuning recomendado (Parte 2)
 

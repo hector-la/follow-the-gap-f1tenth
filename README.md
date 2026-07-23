@@ -79,7 +79,7 @@ Cada scan (`lidar_callback`) pasa por 6 pasos:
 | 6. Dirección + velocidad | ángulo hacia el objetivo; velocidad proporcional al giro (rápido en recta, lento en curva) |
 
 ```
-   LIDAR /scan → [1] Preprocesar → [Recorte FOV ±100°] → [2] Punto más cercano
+   LIDAR /scan → [1] Preprocesar → [Recorte FOV ±85°] → [2] Punto más cercano
         → [3] Burbuja de seguridad → [4] Gap más grande → [5] Punto objetivo
         → [6] steering + velocidad proporcional → /drive
 ```
@@ -101,22 +101,24 @@ Todo vive en una sola clase, `ReactiveFollowGap(Node)`, dentro de [`src/gap_node
 
 ### Qué incluye esta implementación
 
-- **Recorte de FOV (`fov_recorte`)** — solo procesa el sector frontal (±100°); los rayos hacia atrás no sirven para conducir hacia adelante.
+- **Recorte de FOV (`fov_recorte`)** — solo procesa el sector frontal (±85°); los rayos hacia atrás no sirven para conducir hacia adelante.
 - **Anti-oscilación** — zona muerta (ignora giros menores a `zona_muerta`) + filtro pasa-bajos (`steering = α·nuevo + (1−α)·anterior`) → rectas firmes, giros suaves.
-- **Velocidad proporcional** — interpola entre `vel_recta` y `vel_curva` según el giro: `speed = vel_recta − (vel_recta − vel_curva) · (|steering| / 0.4)`.
+- **Velocidad proporcional** — interpola entre `vel_recta` y `vel_curva` según el giro: `speed = vel_recta − (vel_recta − vel_curva) · (|steering| / 0.41)`.
 - **Contador y cronómetro de vueltas** — `odom_callback` detecta cada vuelta y reporta su tiempo: métrica objetiva para comparar configuraciones.
+
+> **Nota:** esta configuración (`rango_max`, `radio_burbuja`, velocidades, anti-oscilación) es la **misma** que usa `gap_rebase_node.py` en la Parte 2 — se adoptó aquí porque, en la práctica, dio mejor control incluso sin obstáculos. Ver [sección 3](#3-parte-2--ftg-con-obstáculos-estáticos-y-dinámicos-gap_rebase_nodepy) para el detalle de por qué funciona mejor.
 
 ### Parámetros clave
 
 | Parámetro | Valor | Qué controla |
 |-----------|-------|---------------|
-| `rango_max` | 3.0 m | horizonte de visión para buscar gaps |
-| `radio_burbuja` | 80 | qué tan lejos se aleja de un obstáculo cercano |
-| `umbral_gap` | 1.0 m | qué tan exigente es para considerar un hueco "libre" |
-| `fov_recorte` | 100° | ángulo del sector frontal que analiza |
-| `vel_recta` / `vel_curva` | 7.5 / 2.15 m/s | rango de la velocidad proporcional |
-| `zona_muerta` | 20° | umbral mínimo de giro real (anti-zigzag) |
-| `alpha_suavizado` | 0.4 | qué tan brusco o suave reacciona la dirección |
+| `rango_max` | 6.8 m | horizonte de visión para buscar gaps |
+| `radio_burbuja` | 52 | qué tan lejos se aleja de un obstáculo cercano |
+| `umbral_gap` | 1.7 m | qué tan exigente es para considerar un hueco "libre" |
+| `fov_recorte` | 85° | ángulo del sector frontal que analiza |
+| `vel_recta` / `vel_curva` | 7.0 / 1.30 m/s | rango de la velocidad proporcional |
+| `zona_muerta` | 1.5° | umbral mínimo de giro real (anti-zigzag) |
+| `alpha_suavizado` | 0.50 | qué tan brusco o suave reacciona la dirección |
 
 Guía completa de tuning (efectos de subir/bajar cada valor, relaciones entre parámetros): [`guia_parametros.md`](guia_parametros.md).
 
@@ -134,16 +136,14 @@ Mismo pipeline reactivo de la Parte 1 (preprocesar → punto cercano → burbuja
 
 ### Qué cambia respecto a la Parte 1
 
-| Parámetro | Parte 1 (`gap_node`) | Parte 2 (`gap_rebase_node`) | Por qué |
-|-----------|----------------------|------------------------------|---------|
-| `rango_max` | 3.0 m | **6.8 m** | ve mucho más lejos → anticipa el obstáculo/rival con más tiempo |
-| `radio_burbuja` | 80 | 52 | burbuja algo más chica, aprovecha mejor el carril al esquivar |
-| `umbral_gap` | 1.0 m | 1.7 m | más exigente para considerar un hueco "libre" |
-| `zona_muerta` | 20° | **1.5°** | reacciona a giros mucho más finos — necesario para maniobrar entre obstáculos |
-| `alpha_suavizado` | 0.4 | 0.50 | dirección ligeramente más reactiva |
-| Frenado por proximidad/TTC | no tiene | **tampoco tiene** | clave del rebase, ver abajo |
+`gap_node.py` y `gap_rebase_node.py` comparten hoy **la misma config de navegación** (`rango_max=6.8`, `radio_burbuja=52`, `umbral_gap=1.7`, `fov_recorte=85°`, `zona_muerta=1.5°`, `alpha_suavizado=0.50`) — el tuning que se afinó para esquivar obstáculos y rebasar resultó dar mejor control en general, así que se adoptó también en la Parte 1. La única diferencia real que queda:
 
-**La clave del rebase:** la velocidad depende **solo del ángulo de giro** (igual que en la Parte 1) — no hay ninguna capa que frene por estar cerca de algo. Cuando el rival aparece al frente, la dirección (FTG) ya apunta al hueco libre a su lado; como nada frena al carro por la cercanía, la velocidad se mantiene alta y el carro **fluye alrededor del rival y lo pasa**, en vez de quedarse pegado a su ritmo.
+| Aspecto | Parte 1 (`gap_node`) | Parte 2 (`gap_rebase_node`) |
+|---------|------------------------|-------------------------------|
+| `vel_recta` / `vel_curva` | fijos en el código (7.0 / 1.30) | **parámetros ROS** (mismos valores por defecto) — permite lanzar el mismo nodo dos veces con velocidades distintas (ego rápido / oponente lento) |
+| Frenado por proximidad/TTC | no tiene | tampoco tiene |
+
+**La clave del rebase no es el tuning, es lo que NO tiene:** la velocidad depende **solo del ángulo de giro** — no hay ninguna capa que frene por estar cerca de algo. Cuando el rival aparece al frente, la dirección (FTG) ya apunta al hueco libre a su lado; como nada frena al carro por la cercanía, la velocidad se mantiene alta y el carro **fluye alrededor del rival y lo pasa**, en vez de quedarse pegado a su ritmo.
 
 ### Qué incluye esta implementación
 
